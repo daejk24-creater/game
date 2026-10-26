@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>포물선 발사 실험실</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#f3f7ff;background:#0b1224}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0%,#1c3260 0,#0b1224 55%);min-height:100vh}
+button,input{font:inherit}button{cursor:pointer;border:0;border-radius:12px;padding:12px 16px;font-weight:800;background:#77e4d2;color:#102035}
+button.secondary{background:#263858;color:#edf4ff;border:1px solid #496086}button:focus-visible,input:focus-visible{outline:3px solid #ffdf7e;outline-offset:3px}
+header{max-width:1240px;margin:auto;padding:26px 22px 14px} .eyebrow{color:#77e4d2;font-size:14px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:clamp(30px,4vw,48px);margin:7px 0 8px;line-height:1.12}header p{color:#c2cce0;font-size:17px;margin:0}
+main{max-width:1240px;margin:auto;padding:10px 22px 30px;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(290px,.9fr);gap:18px}
+.panel{background:#111d35;border:1px solid #2a3b5e;border-radius:20px;overflow:hidden;box-shadow:0 12px 35px #0002}
+.panel-head{padding:17px 19px;border-bottom:1px solid #293a5b;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.panel-head h2{font-size:20px;margin:0}.pill{font-size:12px;background:#203c4a;color:#9af4e4;padding:6px 10px;border-radius:999px;font-weight:800}
+#scene{display:block;width:100%;height:auto;background:#101c34}
+.scene-foot{padding:12px 17px;color:#b9c7df;font-size:14px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.controls{padding:18px;display:grid;gap:19px}.control-label{display:flex;justify-content:space-between;gap:12px;font-weight:800;font-size:16px;margin-bottom:9px}.value{color:#7fe8d6;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#77e4d2;cursor:pointer} .ticks{display:flex;justify-content:space-between;color:#8fa2c2;font-size:12px;margin-top:4px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button:first-child{grid-column:1/-1;padding:15px;font-size:18px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 18px 18px}
+.metric{background:#172744;border:1px solid #2a3c60;border-radius:14px;padding:12px 10px;min-width:0}.metric .name{font-size:12px;color:#aebdd5}.metric .number{font-size:clamp(18px,2vw,25px);font-weight:900;margin-top:5px;white-space:nowrap}.metric small{font-size:12px;color:#aebdd5}
+.message{margin:0 18px 18px;padding:12px 14px;background:#1b2c4b;border-radius:12px;line-height:1.5;color:#d9e5fa;font-size:14px}
+.lesson{padding:17px 19px;border-top:1px solid #293a5b}.lesson h3{margin:0 0 8px;font-size:17px}.lesson p{margin:6px 0;color:#c3cfe3;line-height:1.55;font-size:14px}.formula{font-size:18px;font-weight:900;color:#ffe18b;letter-spacing:.02em}
+.mission{margin:18px;padding:15px;border-radius:14px;background:linear-gradient(130deg,#273b62,#1a2c4c);border:1px solid #435d8b}.mission h3{margin:0 0 6px}.mission p{margin:0 0 12px;font-size:14px;color:#d4def0;line-height:1.5}
+footer{max-width:1240px;margin:auto;padding:0 22px 28px;color:#879ab8;font-size:12px;line-height:1.6}
+@media(max-width:850px){main{grid-template-columns:1fr}.metrics .number{font-size:22px}}@media(max-width:460px){header,main,footer{padding-left:12px;padding-right:12px}.metrics{padding-left:12px;padding-right:12px;gap:6px}.metric{padding:10px 7px}.controls{padding:14px}.panel-head{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+<div class="eyebrow">수학 × 과학 · INTERACTIVE LAB</div>
+<h1>포물선 발사 실험실</h1>
+<p>각도와 속도를 바꾸고 발사해 보세요. 공의 궤적 속에 수학과 과학이 숨어 있습니다.</p>
+</header>
+<main>
+<section class="panel" aria-label="발사 시뮬레이션">
+<div class="panel-head"><h2>발사장</h2><span class="pill" id="status">실험 준비 완료</span></div>
+<canvas id="scene" width="800" height="500" aria-label="공의 포물선 운동 애니메이션"></canvas>
+<div class="scene-foot"><span>격자 한 칸 = 5 m</span><span>모델: 공기 저항 없음 · 중력 9.8 m/s²</span></div>
+<div class="lesson">
+<h3>이번 실험에서 알아볼 것</h3>
+<p>공은 앞으로 움직이면서 동시에 중력 때문에 아래로 떨어집니다. 두 움직임이 합쳐져 포물선 모양의 길을 만듭니다.</p>
+<p class="formula">수평 이동 + 위아래 운동 = 포물선 궤적</p>
+</div>
+</section>
+<aside class="panel">
+<div class="panel-head"><h2>발사 설정</h2><span class="pill">직접 조작</span></div>
+<div class="controls">
+<div><div class="control-label"><label for="angle">발사 각도</label><span class="value"><span id="angleVal">45</span>°</span></div><input id="angle" type="range" min="10" max="80" value="45"><div class="ticks"><span>10° 낮게</span><span>45°</span><span>80° 높게</span></div></div>
+<div><div class="control-label"><label for="speed">발사 속도</label><span class="value"><span id="speedVal">25</span> m/s</span></div><input id="speed" type="range" min="10" max="35" value="25"><div class="ticks"><span>10 m/s</span><span>빠를수록 멀리</span><span>35 m/s</span></div></div>
+<div><div class="control-label"><label for="target">목표 거리</label><span class="value"><span id="targetVal">45</span> m</span></div><input id="target" type="range" min="10" max="110" value="45"><div class="ticks"><span>10 m</span><span>목표 위치</span><span>110 m</span></div></div>
+<div class="actions"><button id="launch">발사하기</button><button class="secondary" id="reset">처음으로</button><button class="secondary" id="challenge">새 목표 뽑기</button></div>
+</div>
+<div class="metrics">
+<div class="metric"><div class="name">최고 높이</div><div class="number" id="height">15.9</div><small>미터 (m)</small></div>
+<div class="metric"><div class="name">비행 시간</div><div class="number" id="time">3.61</div><small>초 (s)</small></div>
+<div class="metric"><div class="name">이동 거리</div><div class="number" id="range">63.8</div><small>미터 (m)</small></div>
+</div>
+<div class="lesson" style="padding-top:0;border-top:0">
+<h3>지금 설정의 계산 과정</h3>
+<p id="calcVx">수평 속도: —</p>
+<p id="calcVy">수직 속도: —</p>
+<p id="calcHeight">최고 높이: —</p>
+<p id="calcTime">비행 시간: —</p>
+<p id="calcRange">이동 거리: —</p>
+</div>
+<p class="message" id="feedback" aria-live="polite">각도와 속도를 조절한 뒤 발사해 목표물을 맞혀 보세요.</p>
+<div class="mission"><h3>미션: 과녁을 맞혀라!</h3><p id="missionText">목표는 45 m 지점에 있습니다. 각도와 속도를 조절해 과녁 가까이에 공을 보내 보세요.</p><button class="secondary" id="hint">힌트 보기</button></div>
+<div class="lesson">
+<h3>기본 식으로 결과 이해하기</h3>
+<p>발사 속도는 <strong>v</strong>, 발사 각도는 <strong>θ</strong>, 중력 가속도는 <strong>g = 9.8 m/s²</strong>입니다.</p>
+<p class="formula">수평 속도: vₓ = v cos θ</p>
+<p class="formula">수직 속도: vᵧ = v sin θ</p>
+<p class="formula">최고 높이: H = (vᵧ)² ÷ (2g)</p>
+<p class="formula">비행 시간: T = 2vᵧ ÷ g</p>
+<p class="formula">수평 이동 거리: R = vₓ × T</p>
+<p>쉽게 말해, 속도를 수평 방향과 위쪽 방향으로 나누어 계산하면 공의 높이와 날아가는 거리를 예측할 수 있습니다.</p>
+</div>
+</aside>
+</main>
+<footer>학습용 이상화 모델입니다. 공기 저항, 바람, 공의 크기는 계산하지 않습니다. 실제 물체의 운동과는 차이가 있을 수 있습니다.</footer>
+<script>
+(() => {
+const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const angle=$('angle'),speed=$('speed'),target=$('target');
+let animation=null, lastShot=null, showHint=false, targetHit=false;
+const g=9.8;
+function calc(){
+ const a=+angle.value*Math.PI/180,v=+speed.value;
+ const vx=v*Math.cos(a),vy=v*Math.sin(a);
+ const flight=2*vy/g,range=vx*flight,height=vy*vy/(2*g);
+ return {a,v,vx,vy,flight,range,height};
+}
+function fmt(n){return n.toFixed(1)}
+function updateMetrics(){
+ const p=calc();$('angleVal').textContent=angle.value;$('speedVal').textContent=speed.value;$('targetVal').textContent=target.value;
+ $('height').textContent=fmt(p.height);$('time').textContent=p.flight.toFixed(2);$('range').textContent=fmt(p.range);
+ $('calcVx').textContent=`수평 속도: vₓ = ${p.v} × cos(${angle.value}°) = ${fmt(p.vx)} m/s`;
+ $('calcVy').textContent=`수직 속도: vᵧ = ${p.v} × sin(${angle.value}°) = ${fmt(p.vy)} m/s`;
+ $('calcHeight').textContent=`최고 높이: H = ${fmt(p.vy)}² ÷ (2 × 9.8) = ${fmt(p.height)} m`;
+ $('calcTime').textContent=`비행 시간: T = 2 × ${fmt(p.vy)} ÷ 9.8 = ${p.flight.toFixed(2)} s`;
+ $('calcRange').textContent=`이동 거리: R = ${fmt(p.vx)} × ${p.flight.toFixed(2)} = ${fmt(p.range)} m`;
+ $('missionText').textContent=`목표는 ${target.value} m 지점에 있습니다. 예상 이동 거리는 ${fmt(p.range)} m입니다.`;
+ draw();
+}
+function draw(){
+ const W=canvas.width,H=canvas.height, ground=H-58, left=58,right=W-25,top=30;
+ ctx.clearRect(0,0,W,H);
+ const p=calc(), maxX=Math.max(60,+target.value+15,p.range*1.12), maxY=Math.max(25,p.height*1.25);
+ const sx=(right-left)/maxX, sy=(ground-top)/maxY;
+ const X=x=>left+x*sx,Y=y=>ground-y*sy;
+ const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#17294a');grad.addColorStop(1,'#0d172b');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+ ctx.lineWidth=1;ctx.strokeStyle='#293b5c';ctx.fillStyle='#9bacc8';ctx.font='12px system-ui';ctx.textAlign='center';
+ for(let x=0;x<=maxX;x+=10){ctx.beginPath();ctx.moveTo(X(x),top);ctx.lineTo(X(x),ground);ctx.stroke();if(x%20===0)ctx.fillText(x+' m',X(x),ground+20)}
+ ctx.textAlign='right';
+ for(let y=0;y<=maxY;y+=5){ctx.beginPath();ctx.moveTo(left,Y(y));ctx.lineTo(right,Y(y));ctx.stroke();if(y%10===0)ctx.fillText(y+'',left-10,Y(y)+4)}
+ ctx.fillStyle='#34513f';ctx.fillRect(left,ground,right-left,H-ground);ctx.fillStyle='#7bcf8a';ctx.fillRect(left,ground,right-left,3);
+ const tx=+target.value;
+ ctx.fillStyle='#e6d8ae';ctx.fillRect(X(tx)-2,ground-44,4,44);
+ ctx.beginPath();ctx.arc(X(tx),ground-47,13,0,Math.PI*2);ctx.fillStyle='#ff6c83';ctx.fill();
+ ctx.beginPath();ctx.arc(X(tx),ground-47,8,0,Math.PI*2);ctx.fillStyle='#fff1c8';ctx.fill();
+ ctx.beginPath();ctx.arc(X(tx),ground-47,3.5,0,Math.PI*2);ctx.fillStyle='#ff6c83';ctx.fill();
+ ctx.fillStyle='#ffd5de';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillText('목표 '+tx+' m',X(tx),ground-70);
+ ctx.save();ctx.translate(X(0),ground);ctx.rotate(-p.a);
+ ctx.fillStyle='#9cb5dc';ctx.fillRect(-3,-11,43,15);ctx.beginPath();ctx.arc(0,-3,17,0,Math.PI*2);ctx.fillStyle='#77e4d2';ctx.fill();ctx.restore();
+ ctx.beginPath();for(let t=0;t<=p.flight;t+=p.flight/100){let x=p.vx*t,y=p.vy*t-.5*g*t*t;if(t===0)ctx.moveTo(X(x),Y(Math.max(0,y)));else ctx.lineTo(X(x),Y(Math.max(0,y)));}
+ ctx.strokeStyle='#77e4d2';ctx.lineWidth=3;ctx.setLineDash([7,6]);ctx.stroke();ctx.setLineDash([]);
+ ctx.beginPath();ctx.arc(X(p.range/2),Y(p.height),5,0,Math.PI*2);ctx.fillStyle='#ffe18b';ctx.fill();
+ ctx.fillStyle='#ffe18b';ctx.font='bold 13px system-ui';ctx.textAlign='left';ctx.fillText('최고 '+fmt(p.height)+' m',Math.min(right-100,X(p.range/2)+10),Math.max(top+14,Y(p.height)-12));
+ if(animation){
+   const t=Math.min(animation.t,p.flight),x=p.vx*t,y=Math.max(0,p.vy*t-.5*g*t*t);
+   ctx.beginPath();for(let tt=Math.max(0,t-.65);tt<=t;tt+=.015){const xx=p.vx*tt,yy=Math.max(0,p.vy*tt-.5*g*tt*tt);if(tt===Math.max(0,t-.65))ctx.moveTo(X(xx),Y(yy));else ctx.lineTo(X(xx),Y(yy));}
+   ctx.strokeStyle='#ffb45f';ctx.lineWidth=4;ctx.stroke();
+   ctx.beginPath();ctx.arc(X(x),Y(y),9,0,Math.PI*2);ctx.fillStyle='#fff0a8';ctx.shadowColor='#ffbc61';ctx.shadowBlur=18;ctx.fill();ctx.shadowBlur=0;
+ } else if(lastShot){
+   const x=lastShot.x,y=lastShot.y;ctx.beginPath();ctx.arc(X(x),Y(Math.max(0,y)),7,0,Math.PI*2);ctx.fillStyle=targetHit?'#7dffba':'#ffb45f';ctx.fill();
+ }
+ ctx.fillStyle='#d7e5fa';ctx.font='bold 13px system-ui';ctx.textAlign='left';ctx.fillText('각도 '+angle.value+'°',left+10,top+18);
+}
+function launch(){
+ if(animation)return;
+ const p=calc();animation={t:0,p};lastShot=null;targetHit=false;
+ $('status').textContent='발사 중';$('feedback').textContent='공이 날아가고 있습니다. 궤적을 관찰해 보세요.';
+ const started=performance.now();
+ function frame(now){
+  if(!animation)return;
+  animation.t=Math.min(p.flight,(now-started)/1000);
+  draw();
+  if(animation.t>=p.flight){
+   const landedRange=p.range;lastShot={x:landedRange,y:0};animation=null;
+   targetHit=Math.abs(landedRange-(+target.value))<=Math.max(3,+target.value*.06);
+   $('status').textContent=targetHit?'명중!':'발사 완료';
+   $('feedback').textContent=targetHit?`명중했습니다! 이동 거리 ${fmt(landedRange)} m로 목표 ${target.value} m에 도달했습니다.`:`공이 ${fmt(landedRange)} m 지점에 떨어졌습니다. 목표는 ${target.value} m입니다. 각도나 속도를 바꿔 다시 도전해 보세요.`;
+   draw();return;
+  }
+  requestAnimationFrame(frame);
+ }
+ requestAnimationFrame(frame);
+}
+[angle,speed,target].forEach(el=>el.addEventListener('input',()=>{if(animation)animation=null;lastShot=null;$('status').textContent='실험 준비 완료';updateMetrics();}));
+$('launch').addEventListener('click',launch);
+$('reset').addEventListener('click',()=>{animation=null;lastShot=null;angle.value=45;speed.value=25;target.value=45;$('status').textContent='실험 준비 완료';$('feedback').textContent='각도와 속도를 조절한 뒤 발사해 목표물을 맞혀 보세요.';updateMetrics();});
+$('challenge').addEventListener('click',()=>{animation=null;lastShot=null;target.value=String(20+Math.floor(Math.random()*71));$('status').textContent='새 목표 준비';$('feedback').textContent='새로운 목표가 생겼습니다. 각도와 속도를 조절해 명중시켜 보세요.';updateMetrics();});
+$('hint').addEventListener('click',()=>{showHint=!showHint;$('feedback').textContent=showHint?'힌트: 출발 높이와 도착 높이가 같고 공기 저항이 없다면 45°에서 같은 속도의 최대 수평 거리를 얻습니다. 목표가 가까우면 각도를 낮추고, 멀면 속도를 높여 보세요.':'각도와 속도를 조절한 뒤 발사해 목표물을 맞혀 보세요.';$('hint').textContent=showHint?'힌트 닫기':'힌트 보기';});
+updateMetrics();
+})();
+</script>
+</body>
+</html>
